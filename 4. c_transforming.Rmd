@@ -1,0 +1,109 @@
+---
+title: "4c. Tranformation"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Normalizing, Transforming, and the QQ plot.
+
+## 1a. Load the ChickWeight dataset from the datasets library. We will be looking at the weight distribution.
+
+```{r library}
+library(tidyverse)
+library(ggplot2)
+library(stats)
+library(BBmisc)
+library(caret)
+
+# normalize() or scale ()
+# Skew:
+#   mild -> transform(sqrt()), 
+#   severe -> transform(log()), 
+#   BoxCoxTrans() -> predict()
+```
+
+## 1b. Plot a histogram of weight. What does the shape tell you?
+
+It is a normal distribution.
+```{r weight hist, echo=FALSE}
+ChickWeight_t21 <- filter(ChickWeight, Time == 21)
+print(ChickWeight_t21)
+ggplot(ChickWeight_t21, aes(x=weight)) + geom_histogram()
+```
+
+
+## 1c. Scale the data using scale(). How does the plot of the histogram change?
+It tends towards a normal distribution.
+```{r scaled, echo=TRUE}
+weight_scaled = scale(ChickWeight_t21$weight)
+ggplot(ChickWeight_t21, aes(x=weight_scaled)) + geom_histogram()
+```
+
+## 1d. Use qqnorm() and qqline() to create quantile-quantile plots of the scaled and unscaled data. Are they different? Do you understand why?
+
+Unscaled data:
+```{r unscaled plot, echo=TRUE}
+qqnorm(ChickWeight_t21$weight, main = "Unscaled Data Q-Q Plot")
+qqline(ChickWeight_t21$weight)
+```
+
+Scaled data:
+```{r scaled plot, echo=TRUE}
+ChickWeight_t21_scaled <- mutate(ChickWeight_t21, weight = scale(weight))
+qqnorm(ChickWeight_t21_scaled$weight, main = "Scaled Data Q-Q Plot")
+qqline(ChickWeight_t21_scaled$weight)
+
+```
+
+## 1e. Try using transform() to add variables that are the log and sqrt of weight. What do you see in the quantile-quantile plots of these variables?
+```{r log, echo=TRUE}
+ChickWeight_t21_log = transform(ChickWeight_t21, ChickWeight_t21_log = log(weight))
+qqnorm(ChickWeight_t21_log$ChickWeight_t21_log, main = "Log Q-Q Plot")
+qqline(ChickWeight_t21_log$ChickWeight_t21_log)
+```
+
+```{r sqrt, echo=TRUE}
+ChickWeight_t21_sqrt = transform(ChickWeight_t21, ChickWeight_t21_sqrt = sqrt(weight))
+qqnorm(ChickWeight_t21_sqrt$ChickWeight_t21_sqrt, main = "Sqrt Q-Q Plot")
+qqline(ChickWeight_t21_sqrt$ChickWeight_t21_sqrt)
+```
+
+## 1f. Now try using a Box-Cox transform on weight. Compare the results to those from the log and sqrt transformations.
+```{r boxcox, echo=TRUE}
+(ChickWeight_t21_boxcox = BoxCoxTrans(ChickWeight_t21$weight, fudge = 0.05))
+ChickWeight_t21$weight_boxcox = predict(ChickWeight_t21_boxcox, ChickWeight_t21$weight)
+qqnorm(ChickWeight_t21$weight_boxcox, main = "Boxcox Q-Q Plot")
+qqline(ChickWeight_t21$weight_boxcox)
+```
+
+# 2. Let’s do an experiment to help us understand distributions and how understanding their shape helps us inform our transformations.
+
+## 2a. Generate 1000 random numbers from the normal distribution with mean = 0 and sd = 0.5. Make a quantile-quantile plot.
+
+```{r a, echo=TRUE}
+(a = rnorm(1000, mean = 0, sd = 0.5))
+qqnorm(a)
+qqline(a)
+```
+
+
+## 2b. Generate 1000 random numbers from the exponential distribution with lambda = 10. Make a quantile-quantile plot.
+
+```{r b, echo=TRUE}
+(b = rexp(1000, rate = 10))
+qqnorm(b)
+qqline(b)
+```
+
+## 2c. Take the log of the exponentially distributed numbers. Make a quantile-quantile plot.
+
+```{r c, echo=TRUE}
+c = transform(b, b_log = log(b))
+qqnorm(c$b_log)
+qqline(c$b_log)
+```
+
+# 3. Bringing it all together. Scrape the mortality rate data. Examine the distribution of the mortality rate by country (histograms and quantile-quantile plots should help). Use a transformation to normalize the data if necessary.
